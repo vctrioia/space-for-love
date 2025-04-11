@@ -43,8 +43,6 @@
 <script src="starData.js"></script>
  <script>
        
-
-
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -62,7 +60,7 @@
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.enablePan = true;
-  controls.minDistance = 100;
+  controls.minDistance = 50;
   controls.maxDistance = 2000;
   controls.maxPolarAngle = Math.PI;
   controls.enableZoom = true;
@@ -77,12 +75,10 @@
   let initialControlsTarget = null;
   let tourOrder = []; 
   let sceneRotationEnabled = true;
-
+  let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   let highlightedStar = null; 
   let twinkleAnimations = []; 
-
-
 
   function createStarField() {
       const starsGeometry = new THREE.BufferGeometry();
@@ -124,7 +120,7 @@
   }
 
   function createNamedStar(starData) {
-      const starGeometry = new THREE.SphereGeometry(10, 16, 16);
+      const starGeometry = new THREE.SphereGeometry(10, 32, 32);
       const starMaterial = new THREE.MeshBasicMaterial({
           color: 0xFFFFFF,
           transparent: true,
@@ -134,7 +130,7 @@
       star.position.set(starData.position.x, starData.position.y, starData.position.z);
       star.userData = starData;
       star.userData.originalBrightness = starData.brightness;
-      star.userData.originalScale = 1; 
+      star.userData.originalScale = { x: 1, y: 1, z: 1 };
       star.userData.isHighlighted = false; 
 
       const labelDiv = document.createElement('div');
@@ -210,22 +206,26 @@
           scene.add(backgroundSphere);
       });
   }
-function onMouseClick(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  
+function handlePointerInteraction(event) {
+  event.preventDefault();
+  
+  const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+  const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+  
+  if (!clientX || !clientY) return;
+  
+  mouse.x = (clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(starObjects);
 
   if (intersects.length > 0) {
       const star = intersects[0].object;
-      const x = event.clientX;
-      const y = event.clientY;
-
-      showStarDetails(star, x, y);
+      showStarDetails(star);
   }
 }
-
 
 function showStarDetails(star) {
   const box = document.getElementById('star-details');
@@ -293,272 +293,271 @@ function showStarDetails(star) {
   }, 10);
 }
 
-
 function hideStarDetails() {
-      
-
       document.getElementById('star-details').style.display = 'none';
-      
-  }
-  document.getElementById('star-details').addEventListener('click', hideStarDetails);
+}
+
+document.getElementById('star-details').addEventListener('click', hideStarDetails);
   
-  function showNotification(message, duration = 2000) {
-      const notification = document.getElementById('tour-notification');
-      notification.textContent = message;
-      notification.style.display = 'block';
+function showNotification(message, duration = 2000) {
+    const notification = document.getElementById('tour-notification');
+    notification.textContent = message;
+    notification.style.display = 'block';
 
-      setTimeout(() => {
-          notification.style.display = 'none';
-      }, duration);
-  }
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, duration);
+}
 
-  function generateRandomTourOrder() {
-      const indices = Array.from({ length: starObjects.length }, (_, i) => i);
+function generateRandomTourOrder() {
+    const indices = Array.from({ length: starObjects.length }, (_, i) => i);
 
-      for (let i = indices.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [indices[i], indices[j]] = [indices[j], indices[i]];
-      }
+    for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
 
-      return indices;
-  }
+    return indices;
+}
 
 function startTour() {
-      tourActive = true;
+    tourActive = true;
+    sceneRotationEnabled = false;
+    tourOrder = Array.from({ length: starObjects.length }, (_, i) => i);
+    currentTourIndex = 0;
 
-      sceneRotationEnabled = true;
+    initialCameraPosition = camera.position.clone();
+    initialControlsTarget = controls.target.clone();
 
-      tourOrder = Array.from({ length: starObjects.length }, (_, i) => i);
-      currentTourIndex = 0;
+    document.getElementById('start-tour').style.display = 'none';
+    document.getElementById('prev-star').style.display = 'inline-block';
+    document.getElementById('next-star').style.display = 'inline-block';
+    document.getElementById('end-tour').style.display = 'inline-block';
+    document.getElementById('tour-indicator').style.display = 'block';
 
-      initialCameraPosition = camera.position.clone();
-      initialControlsTarget = controls.target.clone();
+    controls.enabled = true;
 
-      document.getElementById('start-tour').style.display = 'none';
-      document.getElementById('prev-star').style.display = 'inline-block';
-      document.getElementById('next-star').style.display = 'inline-block';
-      document.getElementById('end-tour').style.display = 'inline-block';
-      document.getElementById('tour-indicator').style.display = 'block';
+    const firstStarIndex = tourOrder[0];
+    showNotification(`Починаємо подорож! Перша зупинка: ${starObjects[firstStarIndex].userData.name}`);
 
-      controls.enabled = true;
+    setTimeout(() => {
+        visitStar(currentTourIndex);
+    }, 1000);
+}
 
-      const firstStarIndex = tourOrder[0];
-      showNotification(`Починаємо подорож! Перша зупинка: ${starObjects[firstStarIndex].userData.name}`);
+function endTour() {
+    tourActive = false;
+    hideStarDetails();
+    sceneRotationEnabled = true;
 
-      setTimeout(() => {
-          visitStar(currentTourIndex);
-      }, 1000);
-  }
-  function endTour() {
-      tourActive = false;
-      hideStarDetails();
+    document.getElementById('start-tour').style.display = 'inline-block';
+    document.getElementById('prev-star').style.display = 'none';
+    document.getElementById('next-star').style.display = 'none';
+    document.getElementById('end-tour').style.display = 'none';
+    document.getElementById('tour-indicator').style.display = 'none';
 
-      sceneRotationEnabled = true;
+    controls.enabled = true;
 
-      document.getElementById('start-tour').style.display = 'inline-block';
-      document.getElementById('prev-star').style.display = 'none';
-      document.getElementById('next-star').style.display = 'none';
-      document.getElementById('end-tour').style.display = 'none';
-      document.getElementById('tour-indicator').style.display = 'none';
+    if (highlightedStar) {
+        unhighlightStar(highlightedStar);
+        highlightedStar = null;
+    }
 
-      controls.enabled = true;
+    showNotification('Дякую за подорож разом зі мною, коханий! Це лише наш початок.');
 
-      if (highlightedStar) {
-          unhighlightStar(highlightedStar);
-          highlightedStar = null;
-      }
+    if (initialCameraPosition && initialControlsTarget) {
+        animateCameraToPosition(initialCameraPosition, initialControlsTarget);
+    }
+}
 
-      showNotification('Дякую за подорож разом зі мною, коханий! Це лише наш початок.');
+function prevStar() {
+    if (currentTourIndex > 0) {
+        if (highlightedStar) {
+            unhighlightStar(highlightedStar);
+        }
 
-      if (initialCameraPosition && initialControlsTarget) {
-          animateCameraToPosition(initialCameraPosition, initialControlsTarget);
-      }
-  }
+        currentTourIndex--;
+        updateStarIndicator(currentTourIndex);
+        hideStarDetails();
+        visitStar(currentTourIndex);
+    }
+}
 
-  function prevStar() {
-      if (currentTourIndex > 0) {
-          if (highlightedStar) {
-              unhighlightStar(highlightedStar);
-          }
+function nextStar() {
+    if (currentTourIndex < tourOrder.length - 1) {
+        if (highlightedStar) {
+            unhighlightStar(highlightedStar);
+        }
 
-          currentTourIndex--;
+        currentTourIndex++;
+        updateStarIndicator(currentTourIndex);
+        hideStarDetails();
+        visitStar(currentTourIndex);
+    } else {
+        endTour(); 
+    }
+}
 
-          updateStarIndicator(currentTourIndex);
+function updateStarIndicator(index) {
+    const starIndex = tourOrder[index];
+    const star = starObjects[starIndex];
+    document.getElementById('tour-indicator').textContent =
+        `Зірка ${index + 1} з ${starObjects.length}: ${star.userData.name}`;
+}
 
-          hideStarDetails();
+function visitStar(index) {
+    const starIndex = tourOrder[index];
+    const star = starObjects[starIndex];
 
-          visitStar(currentTourIndex);
-      }
-  }
+    animateCameraToStar(star, () => {
+        showStarDetails(star);
+        highlightStar(star);
+    });
+}
 
-  function nextStar() {
-      if (currentTourIndex < tourOrder.length - 1) {
-          if (highlightedStar) {
-              unhighlightStar(highlightedStar);
-          }
+function highlightStar(star) {
+    highlightedStar = star;
+    star.userData.isHighlighted = true;
+    stopTwinkleAnimation(star);
+    star.material.opacity = 1.0;
+    
+    const originalScale = star.userData.originalScale;
+    star.userData.originalScale = { x: star.scale.x, y: star.scale.y, z: star.scale.z };
+    
+    const scale = 1.3;
+    star.scale.set(scale, scale, scale);
+}
 
-          currentTourIndex++;
-
-          updateStarIndicator(currentTourIndex);
-
-          hideStarDetails();
-
-          visitStar(currentTourIndex);
-      } else {
-          endTour(); 
-      }
-  }
-
-  function updateStarIndicator(index) {
-      const starIndex = tourOrder[index];
-      const star = starObjects[starIndex];
-      document.getElementById('tour-indicator').textContent =
-          `Зірка ${index + 1} з ${starObjects.length}: ${star.userData.name}`;
-  }
-
-  function visitStar(index) {
-          const starIndex = tourOrder[index];
-          const star = starObjects[starIndex];
-
-          animateCameraToStar(star, () => {
-              showStarDetails(star);
-              highlightStar(star);
-          });
-      }
-
-  function highlightStar(star) {
-      highlightedStar = star;
-      star.userData.isHighlighted = true;
-
-      stopTwinkleAnimation(star);
-
-      star.material.opacity = 1.0;
-
-      const scale = 1.3;
-      star.scale.set(scale, scale, scale);
-  }
-
-  function unhighlightStar(star) {
-      star.userData.isHighlighted = false;
-
-      star.scale.set(1, 1, 1);
-
-      star.material.opacity = star.userData.originalBrightness;
-
-      startTwinkleAnimation(star);
-  }
+function unhighlightStar(star) {
+    star.userData.isHighlighted = false;
+    star.scale.set(1, 1, 1);
+    star.material.opacity = star.userData.originalBrightness;
+    startTwinkleAnimation(star);
+}
 
 function animateCameraToStar(star, callback) {
-      const distance = 200;
-      const targetPosition = star.position.clone().add(new THREE.Vector3(0, 0, distance));
+    const distanceFromStar = 100;
+    
+    const starPosition = star.position.clone();
+    const directionToStar = starPosition.clone().sub(camera.position).normalize();
+    const targetPosition = starPosition.clone().sub(directionToStar.multiplyScalar(distanceFromStar));
+    
+    const startPosition = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const duration = 3000;
+    const startTime = Date.now();
 
-      const startPosition = camera.position.clone();
-      const duration = 2000; 
-      const startTime = Date.now();
+    function animateCamera() {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = easeInOutQuintic(progress);
 
-      function animateCamera() {
-          const now = Date.now();
-          const elapsed = now - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const easeProgress = easeInOutCubic(progress);
+        camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controls.target.lerp(starPosition, easeProgress);
 
-          camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
-          controls.target.lerp(star.position, easeProgress);
-          camera.lookAt(star.position); 
+        if (progress < 1) {
+            requestAnimationFrame(animateCamera);
+        } else if (callback) {
+            callback();
+        }
+    }
 
-          if (progress < 1) {
-              requestAnimationFrame(animateCamera);
-          } else if (callback) {
-              callback();
-          }
-      }
+    animateCamera();
+}
 
-      animateCamera();
-  }
+function animateCameraToPosition(targetPosition, targetLookAt) {
+    const startPosition = camera.position.clone();
+    const startLookAt = controls.target.clone();
+    const duration = 3000;
+    const startTime = Date.now();
 
-  function animateCameraToPosition(targetPosition, targetLookAt) {
-      const startPosition = camera.position.clone();
-      const startLookAt = controls.target.clone();
+    function animateCamera() {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = easeInOutQuintic(progress);
 
-      const duration = 2000; 
-      const startTime = Date.now();
+        camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controls.target.lerpVectors(startLookAt, targetLookAt, easeProgress);
 
-      function animateCamera() {
-          const now = Date.now();
-          const elapsed = now - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const easeProgress = easeInOutCubic(progress);
+        if (progress < 1) {
+            requestAnimationFrame(animateCamera);
+        }
+    }
 
-          camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
-          controls.target.lerpVectors(startLookAt, targetLookAt, easeProgress);
-          camera.lookAt(controls.target);
+    animateCamera();
+}
 
-          if (progress < 1) {
-              requestAnimationFrame(animateCamera);
-          }
-      }
+function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
-      animateCamera();
-  }
+function easeInOutQuintic(t) {
+    return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+}
 
-  function easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  }
+function animate() {
+    requestAnimationFrame(animate);
 
-  function animate() {
-      requestAnimationFrame(animate);
+    if (sceneRotationEnabled) {
+        scene.rotation.y += 0.0001;
+    }
 
-      if (sceneRotationEnabled) {
-          scene.rotation.y += 0.0001;
-      }
+    controls.update();
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+}
 
-      controls.update();
-      renderer.render(scene, camera);
-      labelRenderer.render(scene, camera);
-  }
+function setupInteractions() {
+    if (isTouchDevice) {
+        renderer.domElement.addEventListener('touchstart', handlePointerInteraction, { passive: false });
+    } else {
+        window.addEventListener('click', handlePointerInteraction);
+    }
+    
+    window.addEventListener('wheel', (event) => {
+        if (tourActive) {
+            const zoomSpeed = 0.1;
+            const delta = -Math.sign(event.deltaY) * zoomSpeed;
 
-  window.addEventListener('wheel', (event) => {
-      if (tourActive) {
-          const zoomSpeed = 0.1;
-          const delta = -Math.sign(event.deltaY) * zoomSpeed;
+            const distance = camera.position.distanceTo(controls.target);
 
-          const distance = camera.position.distanceTo(controls.target);
+            const newDistance = Math.max(
+                controls.minDistance,
+                Math.min(controls.maxDistance, distance * (1 - delta))
+            );
 
-          const newDistance = Math.max(
-              controls.minDistance,
-              Math.min(controls.maxDistance, distance * (1 - delta))
-          );
+            const direction = camera.position.clone().sub(controls.target).normalize();
 
-          const direction = camera.position.clone().sub(controls.target).normalize();
+            camera.position.copy(controls.target).add(direction.multiplyScalar(newDistance));
+        }
+    });
 
-          camera.position.copy(controls.target).add(direction.multiplyScalar(newDistance));
-      }
-  });
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
 
-  window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      labelRenderer.setSize(window.innerWidth, window.innerHeight);
-  });
+function init() {
+    camera.position.set(0, 0, 0);
+    createStarField();
+    setupInteractions();
 
-  window.addEventListener('click', onMouseClick);
+    document.getElementById('start-tour').addEventListener('click', startTour);
+    document.getElementById('prev-star').addEventListener('click', prevStar);
+    document.getElementById('next-star').addEventListener('click', nextStar);
+    document.getElementById('end-tour').addEventListener('click', endTour);
 
-  function init() {
-      camera.position.z = 1000;
-      createStarField();
+    animate();
+}
 
-      document.getElementById('start-tour').addEventListener('click', startTour);
-      document.getElementById('prev-star').addEventListener('click', prevStar);
-      document.getElementById('next-star').addEventListener('click', nextStar);
-      document.getElementById('end-tour').addEventListener('click', endTour);
+init();
 
-      animate();
-  }
-
-  init();
-
-  window.hideStarDetails = hideStarDetails;
+window.hideStarDetails = hideStarDetails;
     </script>
 </body>
 
