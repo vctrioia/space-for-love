@@ -1,145 +1,132 @@
-body {
-    margin: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-
-}
-
-canvas {
-    display: block;
-}
-
-.info {
-position: absolute;
-top: 10px;
-left: 10px;
-color: white;
-background-color: rgba(0, 0, 0, 0.5);
-padding: 10px;
-border-radius: 5px;
-z-index: 100;
-}
-
-
-.star-label {
-    color: white;
-    font-size: 12px;
-    pointer-events: none;
-    text-shadow: 0 0 3px black;
-
-}
-
-.star-details {
-    position: absolute;
-    display: none;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 15px;
-    border-radius: 5px;
-    z-index: 200;
-    max-width: 300px;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    max-width:  auto;
-    max-height: auto;
-    overflow: auto;
-    box-sizing: border-box;
-}
-
-.star-details h3 {
-    margin-top: 0;
-    color: #7700ff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-    padding-bottom: 5px;
+ body {
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Arial', sans-serif;
+        background-color: #000;
+    }
     
-}
-
-.close-button {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    cursor: pointer;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 16px;
-}
-
-
-.tour-controls {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-    z-index: 300;
-}
-
-.tour-button {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 8px 15px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 14px;
-}
-
-.tour-button:hover {
-    background-color: rgba(0, 0, 0, 0.9);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-}
-
-.tour-indicator {
-position: absolute;
-bottom: 85px; 
-left: 50%;
-transform: translateX(-50%);
-color: white;
-background-color: rgba(0, 0, 0, 0.7);
-padding: 5px 15px;
-border-radius: 15px;
-font-size: 14px;
-z-index: 300;
-display: block; 
-white-space: nowrap;
-}
-
-
-
-.tour-notification {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 10px;
-    text-align: center;
-    z-index: 400;
-    display: none;
-    animation: fadeIn 0.5s, fadeOut 0.5s 2s forwards;
-}
-
-@keyframes fadeIn {
-    from {
+    .star-details {
+        display: none;
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.8);
+        border: 1px solid #666;
+        border-radius: 10px;
+        padding: 15px;
+        max-width: 300px;
+        color: #fff;
+        font-size: 14px;
+        line-height: 1.4;
+        z-index: 1000;
         opacity: 0;
+        transition: opacity 0.3s ease;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
     }
-
-    to {
-        opacity: 1;
+    
+    .star-details h3 {
+        margin-top: 0;
+        color: #f8e71c;
+        font-size: 18px;
+        margin-bottom: 10px;
+        text-align: center;
     }
-}
-
-@keyframes fadeOut {
-    from {
-        opacity: 1;
+    
+    .close-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 5px;
     }
-
-    to {
-        opacity: 0;
+    
+    .star-label {
+        color: #ffffff;
+        background-color: rgba(0, 0, 0, 0.4);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        user-select: none;
+        pointer-events: auto;
+        cursor: pointer;
+        white-space: nowrap;
     }
-}    
+    
+    .tour-notification {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 1001;
+        text-align: center;
+        max-width: 80%;
+    }
+    
+    .tour-controls {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 1000;
+    }
+    
+    .tour-button {
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: 1px solid #666;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s;
+    }
+    
+    .tour-button:hover {
+        background-color: rgba(50, 50, 50, 0.8);
+    }
+    
+    .tour-indicator {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 1000;
+    }
+    
+    @media (max-width: 768px) {
+        .tour-controls {
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 90%;
+        }
+        
+        .tour-button {
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        
+        .star-details {
+            max-width: 80%;
+        }
+        
+        .tour-indicator {
+            font-size: 12px;
+            right: 10px;
+            top: 10px;
+        }
+    }
