@@ -11,12 +11,7 @@
 </head>
 
 <body>
-   <div class="info">
-        <h3>Зіркове небо</h3>
-        <p>Використовуйте мишу для огляду</p>
-        <p>Колесо миші для зуму</p>
-        <p>Клікніть на зірку для інформації</p>
-    </div>
+
 
 <div id="star-details" class="star-details">
     <button class="close-button" onclick="hideStarDetails()">✕</button>
@@ -28,18 +23,18 @@
 
 
     <div id="tour-notification" class="tour-notification">
-        Починаємо тур по зіркам!
+        Подорож космічним простором нашого кохання!
     </div>
 
-    <!-- Кнопки керування туром -->
+   
     <div class="tour-controls">
-        <button id="start-tour" class="tour-button">Почати тур</button>
+        <button id="start-tour" class="tour-button">Почати подорож</button>
         <button id="prev-star" class="tour-button" style="display: none;">Попередня</button>
         <button id="next-star" class="tour-button" style="display: none;">Наступна</button>
-        <button id="end-tour" class="tour-button" style="display: none;">Завершити тур</button>
+        <button id="end-tour" class="tour-button" style="display: none;">Завершити подорожувати</button>
     </div>
 
-    <!-- Індикатор прогресу туру -->
+
     <div id="tour-indicator" class="tour-indicator"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -348,7 +343,7 @@ function startTour() {
       controls.enabled = true;
 
       const firstStarIndex = tourOrder[0];
-      showNotification(`Починаємо тур! Перша зупинка: ${starObjects[firstStarIndex].userData.name}`);
+      showNotification(`Починаємо подорож! Перша зупинка: ${starObjects[firstStarIndex].userData.name}`);
 
       setTimeout(() => {
           visitStar(currentTourIndex);
