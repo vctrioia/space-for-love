@@ -10,6 +10,7 @@ canvas {
     display: block;
 }
 
+
 .info {
 position: absolute;
 top: 10px;
@@ -95,7 +96,7 @@ z-index: 100;
 
 .tour-indicator {
 position: absolute;
-bottom: 85px; я
+bottom: 85px; 
 left: 50%;
 transform: translateX(-50%);
 color: white;
@@ -107,6 +108,7 @@ z-index: 300;
 display: block; 
 white-space: nowrap;
 }
+
 
 
 .tour-notification {
