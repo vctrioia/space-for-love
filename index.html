@@ -5,314 +5,240 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="image.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
     <title>Space for Love</title>
 
 </head>
 
-
 <body>
+
+
 <div id="star-details" class="star-details">
     <button class="close-button" onclick="hideStarDetails()">✕</button>
     <h3 id="star-name">Назва зірки</h3>
     <div id="star-info">Інформація про зірку</div>
+  
+
 </div>
 
-<div id="tour-notification" class="tour-notification">
-    Подорож космічним простором нашого кохання!
-</div>
 
-<div id="tour-indicator" class="tour-indicator"></div>
+    <div id="tour-notification" class="tour-notification">
+        Подорож космічним простором нашого кохання!
+    </div>
 
-<div class="tour-controls">
-    <button id="start-tour" class="tour-button">Почати подорож</button>
-    <button id="prev-star" class="tour-button" style="display: none;">Попередня</button>
-    <button id="next-star" class="tour-button" style="display: none;">Наступна</button>
-    <button id="end-tour" class="tour-button" style="display: none;">Завершити</button>
-</div>
+   
+    <div class="tour-controls">
+        <button id="start-tour" class="tour-button">Почати подорож</button>
+        <button id="prev-star" class="tour-button" style="display: none;">Попередня</button>
+        <button id="next-star" class="tour-button" style="display: none;">Наступна</button>
+        <button id="end-tour" class="tour-button" style="display: none;">Завершити подорожувати</button>
+    </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+
+    <div id="tour-indicator" class="tour-indicator"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 <script src="starData.js"></script>
-<script>
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+ <script>
+       
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-const labelRenderer = new THREE.CSS2DRenderer();
-labelRenderer.setSize(window.innerWidth, window.innerHeight);
-labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.top = '0';
-labelRenderer.domElement.style.pointerEvents = 'none';
-document.body.appendChild(labelRenderer.domElement);
+  const labelRenderer = new THREE.CSS2DRenderer();
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.top = '0';
+  labelRenderer.domElement.style.pointerEvents = 'none';
+  document.body.appendChild(labelRenderer.domElement);
 
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.enablePan = true;
-controls.minDistance = 100;
-controls.maxDistance = 2000;
-controls.maxPolarAngle = Math.PI;
-controls.enableZoom = true;
-controls.rotateSpeed = 0.5;
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.enablePan = true;
+  controls.minDistance = 100;
+  controls.maxDistance = 2000;
+  controls.maxPolarAngle = Math.PI;
+  controls.enableZoom = true;
 
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const starObjects = [];
-let backgroundSphere = null;
-let tourActive = false;
-let currentTourIndex = 0;
-let initialCameraPosition = null;
-let initialControlsTarget = null;
-let tourOrder = []; 
-let sceneRotationEnabled = true;
-let highlightedStar = null; 
-let twinkleAnimations = []; 
-let touchStartX = 0;
-let touchStartY = 0;
-let lastTapTime = 0;
-let pinchStartDistance = 0;
-let isUserInteracting = false;
-let isMobile = window.innerWidth <= 768;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const starObjects = [];
+  let backgroundSphere = null;
+  let tourActive = false;
+  let currentTourIndex = 0;
+  let initialCameraPosition = null;
+  let initialControlsTarget = null;
+  let tourOrder = []; 
+  let sceneRotationEnabled = true;
 
-function createStarField() {
-    const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({
-        color: 0xFFFFFF,
-        size: isMobile ? 1.5 : 2,
-        transparent: true,
-        vertexColors: true
-    });
+  let highlightedStar = null; 
+  let twinkleAnimations = []; 
 
-    const positions = [];
-    const colors = [];
+  function createStarField() {
+      const starsGeometry = new THREE.BufferGeometry();
+      const starsMaterial = new THREE.PointsMaterial({
+          color: 0xFFFFFF,
+          size: 2,
+          transparent: true,
+          vertexColors: true
+      });
 
-    for (let i = 0; i < (isMobile ? 3000 : 5000); i++) {
-        const x = (Math.random() - 0.5) * 8000;
-        const y = (Math.random() - 0.5) * 8000;
-        const z = (Math.random() - 0.5) * 8000;
-        positions.push(x, y, z);
+      const positions = [];
+      const colors = [];
 
-        const intensity = 0.3 + Math.random() * 0.7;
-        colors.push(intensity, intensity, intensity);
-    }
+      for (let i = 0; i < 5000; i++) {
+          const x = (Math.random() - 0.5) * 8000;
+          const y = (Math.random() - 0.5) * 8000;
+          const z = (Math.random() - 0.5) * 8000;
+          positions.push(x, y, z);
 
-    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+          const intensity = 0.3 + Math.random() * 0.7;
+          colors.push(intensity, intensity, intensity);
+      }
 
-    const backgroundStars = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(backgroundStars);
+      starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-    starsData.forEach(createNamedStar);
+      const backgroundStars = new THREE.Points(starsGeometry, starsMaterial);
+      scene.add(backgroundStars);
 
-    startTwinkleAnimations();
-}
+      starsData.forEach(createNamedStar);
 
-function createNamedStar(starData) {
-    const size = isMobile ? 8 : 10;
-    const starGeometry = new THREE.SphereGeometry(size, 16, 16);
-    const starMaterial = new THREE.MeshBasicMaterial({
-        color: 0xFFFFFF,
-        transparent: true,
-        opacity: starData.brightness
-    });
-    const star = new THREE.Mesh(starGeometry, starMaterial);
-    star.position.set(starData.position.x, starData.position.y, starData.position.z);
-    star.userData = starData;
-    star.userData.originalBrightness = starData.brightness;
-    star.userData.originalScale = 1; 
-    star.userData.isHighlighted = false; 
+      startTwinkleAnimations();
+      document.addEventListener('click', (event) => {
+          const starDetails = document.getElementById('star-details');
+          if (starDetails.style.display === 'block' && !starDetails.contains(event.target)) {
+              hideStarDetails();
+          }
+      });
+  }
 
-    const labelDiv = document.createElement('div');
-    labelDiv.className = 'star-label';
-    labelDiv.textContent = starData.name;
-    labelDiv.style.opacity = starData.brightness;
+  function createNamedStar(starData) {
+      const starGeometry = new THREE.SphereGeometry(10, 16, 16);
+      const starMaterial = new THREE.MeshBasicMaterial({
+          color: 0xFFFFFF,
+          transparent: true,
+          opacity: starData.brightness
+      });
+      const star = new THREE.Mesh(starGeometry, starMaterial);
+      star.position.set(starData.position.x, starData.position.y, starData.position.z);
+      star.userData = starData;
+      star.userData.originalBrightness = starData.brightness;
+      star.userData.originalScale = 1; 
+      star.userData.isHighlighted = false; 
 
-    const label = new THREE.CSS2DObject(labelDiv);
-    label.position.set(0, size * 2, 0);
-    star.add(label);
-    starObjects.push(star);
-    scene.add(star);
-}
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'star-label';
+      labelDiv.textContent = starData.name;
+      labelDiv.style.opacity = starData.brightness;
 
-function startTwinkleAnimations() {
-    starObjects.forEach(star => {
-        startTwinkleAnimation(star);
-    });
-}
+      const label = new THREE.CSS2DObject(labelDiv);
+      label.position.set(0, 20, 0);
+      star.add(label);
+      starObjects.push(star);
+      scene.add(star);
+  }
 
-function startTwinkleAnimation(star) {
-    if (star.userData.isHighlighted) return;
+  function startTwinkleAnimations() {
+      starObjects.forEach(star => {
+          startTwinkleAnimation(star);
+      });
+  }
 
-    const originalBrightness = star.userData.originalBrightness;
-    const minBrightness = originalBrightness * 0.7;
-    const maxBrightness = originalBrightness * 1.1;
+  function startTwinkleAnimation(star) {
+      if (star.userData.isHighlighted) return;
 
-    const duration = 1000 + Math.random() * 2000;
-    const startTime = Date.now();
+      const originalBrightness = star.userData.originalBrightness;
+      const minBrightness = originalBrightness * 0.7;
+      const maxBrightness = originalBrightness * 1.1;
 
-    function animateTwinkle() {
-        const now = Date.now();
-        const elapsed = (now - startTime) % duration;
-        const progress = elapsed / duration;
+      const duration = 1000 + Math.random() * 2000;
+      const startTime = Date.now();
 
-        const brightness = minBrightness + (maxBrightness - minBrightness) *
-            (0.5 + 0.5 * Math.sin(progress * Math.PI * 2));
+      function animateTwinkle() {
+          const now = Date.now();
+          const elapsed = (now - startTime) % duration;
+          const progress = elapsed / duration;
 
-        if (!star.userData.isHighlighted) {
-            star.material.opacity = brightness;
-        }
+          const brightness = minBrightness + (maxBrightness - minBrightness) *
+              (0.5 + 0.5 * Math.sin(progress * Math.PI * 2));
 
-        const animation = requestAnimationFrame(animateTwinkle);
-        star.userData.twinkleAnimation = animation;
-    }
+          if (!star.userData.isHighlighted) {
+              star.material.opacity = brightness;
+          }
 
-    animateTwinkle();
-}
+          const animation = requestAnimationFrame(animateTwinkle);
+          star.userData.twinkleAnimation = animation;
+      }
 
-function stopTwinkleAnimation(star) {
-    if (star.userData.twinkleAnimation) {
-        cancelAnimationFrame(star.userData.twinkleAnimation);
-        star.userData.twinkleAnimation = null;
-    }
-}
+      animateTwinkle();
+  }
 
-function handleMouseClick(event) {
-    event.preventDefault();
-    
-    const clickedElement = document.elementFromPoint(event.clientX, event.clientY);
-    if (clickedElement && 
-        (clickedElement.classList.contains('tour-button') || 
-         clickedElement.classList.contains('close-button'))) {
-        return;
-    }
-    
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  function stopTwinkleAnimation(star) {
+      if (star.userData.twinkleAnimation) {
+          cancelAnimationFrame(star.userData.twinkleAnimation);
+          star.userData.twinkleAnimation = null;
+      }
+  }
 
-    checkStarIntersection();
-}
+  function loadCustomBackground(url) {
+      if (backgroundSphere) {
+          scene.remove(backgroundSphere);
+      }
 
-function handleTouchStart(event) {
-    isUserInteracting = true;
-    
-    const touchedElement = document.elementFromPoint(
-        event.touches[0].clientX, 
-        event.touches[0].clientY
-    );
-    
-    if (touchedElement && 
-        (touchedElement.classList.contains('tour-button') || 
-         touchedElement.classList.contains('close-button') ||
-         touchedElement.closest('.star-details'))) {
-        return;
-    }
-    
-    if (event.touches.length === 1) {
-        touchStartX = event.touches[0].clientX;
-        touchStartY = event.touches[0].clientY;
-        
-        const now = new Date().getTime();
-        const timeSinceLastTap = now - lastTapTime;
-        
-        if (timeSinceLastTap < 300) {
-            event.preventDefault();
-            performZoom(0.2);
-        }
-        
-        lastTapTime = now;
-    } else if (event.touches.length === 2) {
-        event.preventDefault();
-        pinchStartDistance = getPinchDistance(event);
-    }
-}
+      const loader = new THREE.TextureLoader();
+      loader.load(url, function (texture) {
+          const geometry = new THREE.SphereGeometry(8000, 64, 64);
+          geometry.scale(-1, 1, 1);
 
-function handleTouchEnd(event) {
-    if (!isUserInteracting) return;
-    isUserInteracting = false;
-    
-    if (event.changedTouches.length === 1) {
-        const touchEndX = event.changedTouches[0].clientX;
-        const touchEndY = event.changedTouches[0].clientY;
-        
-        const touchedElement = document.elementFromPoint(touchEndX, touchEndY);
-        if (touchedElement && 
-            (touchedElement.classList.contains('tour-button') || 
-             touchedElement.classList.contains('close-button') ||
-             touchedElement.closest('.star-details'))) {
-            return;
-        }
-        
-        const distX = touchEndX - touchStartX;
-        const distY = touchEndY - touchStartY;
-        const distance = Math.sqrt(distX * distX + distY * distY);
-        
-        if (distance < 10) {
-            event.preventDefault();
-            mouse.x = (touchEndX / window.innerWidth) * 2 - 1;
-            mouse.y = -(touchEndY / window.innerHeight) * 2 + 1;
-            
-            checkStarIntersection();
-        }
-    }
-}
+          const material = new THREE.MeshBasicMaterial({
+              map: texture,
+              side: THREE.BackSide
+          });
 
-function handleTouchMove(event) {
-    if (event.touches.length === 2) {
-        event.preventDefault();
-        
-        const currentPinchDistance = getPinchDistance(event);
-        const pinchDelta = currentPinchDistance - pinchStartDistance;
-        
-        if (Math.abs(pinchDelta) > 2) {
-            const zoomSpeed = 0.005;
-            const zoomFactor = pinchDelta * zoomSpeed;
-            
-            performZoom(zoomFactor);
-            
-            pinchStartDistance = currentPinchDistance;
-        }
-    }
-}
+          backgroundSphere = new THREE.Mesh(geometry, material);
+          scene.add(backgroundSphere);
+      });
+  }
 
-function getPinchDistance(event) {
-    const dx = event.touches[0].clientX - event.touches[1].clientX;
-    const dy = event.touches[0].clientY - event.touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-}
+  function handleInteraction(event) {
+      event.preventDefault();
+      
+      let clientX, clientY;
+      
+      if (event.type === 'touchstart' || event.type === 'touchend') {
+          if (event.touches.length > 0) {
+              clientX = event.touches[0].clientX;
+              clientY = event.touches[0].clientY;
+          } else if (event.changedTouches.length > 0) {
+              clientX = event.changedTouches[0].clientX;
+              clientY = event.changedTouches[0].clientY;
+          } else {
+              return;
+          }
+      } else {
+          clientX = event.clientX;
+          clientY = event.clientY;
+      }
+      
+      mouse.x = (clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
-function performZoom(delta) {
-    const zoomSpeed = 0.1;
-    delta *= zoomSpeed;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(starObjects);
 
-    const distance = camera.position.distanceTo(controls.target);
-    const newDistance = Math.max(
-        controls.minDistance,
-        Math.min(controls.maxDistance, distance * (1 - delta))
-    );
+      if (intersects.length > 0) {
+          const star = intersects[0].object;
+          showStarDetails(star);
+      }
+  }
 
-    const direction = camera.position.clone().sub(controls.target).normalize();
-    camera.position.copy(controls.target).add(direction.multiplyScalar(newDistance));
-}
-
-function checkStarIntersection() {
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(starObjects);
-
-    if (intersects.length > 0) {
-        const star = intersects[0].object;
-        showStarDetails(star);
-    } else {
-        const starDetails = document.getElementById('star-details');
-        if (starDetails.style.display === 'block') {
-            hideStarDetails();
-        }
-    }
-}
-
-function showStarDetails(star) {
+  function showStarDetails(star) {
     const box = document.getElementById('star-details');
     document.getElementById('star-name').textContent = star.userData.name;
     document.getElementById("star-info").innerHTML = star.userData.info;
@@ -376,252 +302,303 @@ function showStarDetails(star) {
     setTimeout(() => {
         box.style.opacity = '1';
     }, 10);
-}
+  }
 
-function hideStarDetails() {
-    document.getElementById('star-details').style.display = 'none';
-}
+  function hideStarDetails() {
+      document.getElementById('star-details').style.display = 'none';
+  }
+  
+  function showNotification(message, duration = 2000) {
+      const notification = document.getElementById('tour-notification');
+      notification.textContent = message;
+      notification.style.display = 'block';
 
-function showNotification(message, duration = 2000) {
-    const notification = document.getElementById('tour-notification');
-    notification.textContent = message;
-    notification.style.display = 'block';
+      setTimeout(() => {
+          notification.style.display = 'none';
+      }, duration);
+  }
 
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, duration);
-}
+  function generateRandomTourOrder() {
+      const indices = Array.from({ length: starObjects.length }, (_, i) => i);
 
-function startTour() {
-    tourActive = true;
-    sceneRotationEnabled = false;
-    tourOrder = Array.from({ length: starObjects.length }, (_, i) => i);
-    currentTourIndex = 0;
+      for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
 
-    initialCameraPosition = camera.position.clone();
-    initialControlsTarget = controls.target.clone();
+      return indices;
+  }
 
-    document.getElementById('start-tour').style.display = 'none';
-    document.getElementById('prev-star').style.display = 'inline-block';
-    document.getElementById('next-star').style.display = 'inline-block';
-    document.getElementById('end-tour').style.display = 'inline-block';
-    document.getElementById('tour-indicator').style.display = 'block';
+  function startTour() {
+      tourActive = true;
 
-    controls.enabled = true;
+      sceneRotationEnabled = true;
 
-    const firstStarIndex = tourOrder[0];
-    showNotification(`Починаємо подорож! Перша зупинка: ${starObjects[firstStarIndex].userData.name}`);
+      tourOrder = Array.from({ length: starObjects.length }, (_, i) => i);
+      currentTourIndex = 0;
 
-    setTimeout(() => {
-        visitStar(currentTourIndex);
-    }, 1000);
-}
+      initialCameraPosition = camera.position.clone();
+      initialControlsTarget = controls.target.clone();
 
-function endTour() {
-    tourActive = false;
-    hideStarDetails();
-    sceneRotationEnabled = true;
+      document.getElementById('start-tour').style.display = 'none';
+      document.getElementById('prev-star').style.display = 'inline-block';
+      document.getElementById('next-star').style.display = 'inline-block';
+      document.getElementById('end-tour').style.display = 'inline-block';
+      document.getElementById('tour-indicator').style.display = 'block';
 
-    document.getElementById('start-tour').style.display = 'inline-block';
-    document.getElementById('prev-star').style.display = 'none';
-    document.getElementById('next-star').style.display = 'none';
-    document.getElementById('end-tour').style.display = 'none';
-    document.getElementById('tour-indicator').style.display = 'none';
+      controls.enabled = true;
 
-    controls.enabled = true;
+      const firstStarIndex = tourOrder[0];
+      showNotification(`Починаємо подорож! Перша зупинка: ${starObjects[firstStarIndex].userData.name}`);
 
-    if (highlightedStar) {
-        unhighlightStar(highlightedStar);
-        highlightedStar = null;
-    }
+      setTimeout(() => {
+          visitStar(currentTourIndex);
+      }, 1000);
+  }
+  
+  function endTour() {
+      tourActive = false;
+      hideStarDetails();
 
-    showNotification('Дякую за подорож разом зі мною, коханий! Це лише наш початок.');
+      sceneRotationEnabled = true;
 
-    if (initialCameraPosition && initialControlsTarget) {
-        animateCameraToPosition(initialCameraPosition, initialControlsTarget);
-    }
-}
+      document.getElementById('start-tour').style.display = 'inline-block';
+      document.getElementById('prev-star').style.display = 'none';
+      document.getElementById('next-star').style.display = 'none';
+      document.getElementById('end-tour').style.display = 'none';
+      document.getElementById('tour-indicator').style.display = 'none';
 
-function prevStar() {
-    if (currentTourIndex > 0) {
-        if (highlightedStar) {
-            unhighlightStar(highlightedStar);
-        }
+      controls.enabled = true;
 
-        currentTourIndex--;
-        updateStarIndicator(currentTourIndex);
-        hideStarDetails();
-        visitStar(currentTourIndex);
-    }
-}
+      if (highlightedStar) {
+          unhighlightStar(highlightedStar);
+          highlightedStar = null;
+      }
 
-function nextStar() {
-    if (currentTourIndex < tourOrder.length - 1) {
-        if (highlightedStar) {
-            unhighlightStar(highlightedStar);
-        }
+      showNotification('Дякую за подорож разом зі мною, коханий! Це лише наш початок.');
 
-        currentTourIndex++;
-        updateStarIndicator(currentTourIndex);
-        hideStarDetails();
-        visitStar(currentTourIndex);
-    } else {
-        endTour(); 
-    }
-}
+      if (initialCameraPosition && initialControlsTarget) {
+          animateCameraToPosition(initialCameraPosition, initialControlsTarget);
+      }
+  }
 
-function updateStarIndicator(index) {
-    const starIndex = tourOrder[index];
-    const star = starObjects[starIndex];
-    document.getElementById('tour-indicator').textContent =
-        `Зірка ${index + 1} з ${starObjects.length}: ${star.userData.name}`;
-}
+  function prevStar() {
+      if (currentTourIndex > 0) {
+          if (highlightedStar) {
+              unhighlightStar(highlightedStar);
+          }
 
-function visitStar(index) {
-    const starIndex = tourOrder[index];
-    const star = starObjects[starIndex];
+          currentTourIndex--;
 
-    animateCameraToStar(star, () => {
-        showStarDetails(star);
-        highlightStar(star);
-    });
-}
+          updateStarIndicator(currentTourIndex);
 
-function highlightStar(star) {
-    highlightedStar = star;
-    star.userData.isHighlighted = true;
+          hideStarDetails();
 
-    stopTwinkleAnimation(star);
-    star.material.opacity = 1.0;
+          visitStar(currentTourIndex);
+      }
+  }
 
-    const scale = 1.3;
-    star.scale.set(scale, scale, scale);
-}
+  function nextStar() {
+      if (currentTourIndex < tourOrder.length - 1) {
+          if (highlightedStar) {
+              unhighlightStar(highlightedStar);
+          }
 
-function unhighlightStar(star) {
-    star.userData.isHighlighted = false;
-    star.scale.set(1, 1, 1);
-    star.material.opacity = star.userData.originalBrightness;
-    startTwinkleAnimation(star);
-}
+          currentTourIndex++;
 
-function animateCameraToStar(star, callback) {
-    const distance = 200;
-    
-    const offset = new THREE.Vector3(0, 0, distance);
-    const targetPosition = star.position.clone().add(offset);
-    
-    const startPosition = camera.position.clone();
-    const startTarget = controls.target.clone();
-    const duration = 2000; 
-    const startTime = Date.now();
+          updateStarIndicator(currentTourIndex);
 
-    function animateCamera() {
-        const now = Date.now();
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = easeInOutCubic(progress);
+          hideStarDetails();
 
-        camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
-        controls.target.lerp(star.position, easeProgress);
+          visitStar(currentTourIndex);
+      } else {
+          endTour(); 
+      }
+  }
 
-        if (progress < 1) {
-            requestAnimationFrame(animateCamera);
-        } else if (callback) {
-            callback();
-        }
-    }
+  function updateStarIndicator(index) {
+      const starIndex = tourOrder[index];
+      const star = starObjects[starIndex];
+      document.getElementById('tour-indicator').textContent =
+          `Зірка ${index + 1} з ${starObjects.length}: ${star.userData.name}`;
+  }
 
-    animateCamera();
-}
+  function visitStar(index) {
+      const starIndex = tourOrder[index];
+      const star = starObjects[starIndex];
 
-function animateCameraToPosition(targetPosition, targetLookAt) {
-    const startPosition = camera.position.clone();
-    const startLookAt = controls.target.clone();
+      animateCameraToStar(star, () => {
+          showStarDetails(star);
+          highlightStar(star);
+      });
+  }
 
-    const duration = 2000; 
-    const startTime = Date.now();
+  function highlightStar(star) {
+      highlightedStar = star;
+      star.userData.isHighlighted = true;
 
-    function animateCamera() {
-        const now = Date.now();
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = easeInOutCubic(progress);
+      stopTwinkleAnimation(star);
 
-        camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
-        controls.target.lerpVectors(startLookAt, targetLookAt, easeProgress);
+      star.material.opacity = 1.0;
 
-        if (progress < 1) {
-            requestAnimationFrame(animateCamera);
-        }
-    }
+      const scale = 1.3;
+      star.scale.set(scale, scale, scale);
+  }
 
-    animateCamera();
-}
+  function unhighlightStar(star) {
+      star.userData.isHighlighted = false;
 
-function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
+      star.scale.set(1, 1, 1);
 
-function animate() {
-    requestAnimationFrame(animate);
+      star.material.opacity = star.userData.originalBrightness;
 
-    if (sceneRotationEnabled) {
-        scene.rotation.y += 0.0001;
-    }
+      startTwinkleAnimation(star);
+  }
 
-    controls.update();
-    renderer.render(scene, camera);
-    labelRenderer.render(scene, camera);
-}
+  function animateCameraToStar(star, callback) {
+      const distance = 200;
+      const targetPosition = star.position.clone().add(new THREE.Vector3(0, 0, distance));
 
-function handleWheel(event) {
-    event.preventDefault();
-    const delta = -Math.sign(event.deltaY);
-    performZoom(delta);
-}
+      const startPosition = camera.position.clone();
+      const duration = 2000; 
+      const startTime = Date.now();
 
-function init() {
-    camera.position.z = 1000;
-    createStarField();
+      function animateCamera() {
+          const now = Date.now();
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easeProgress = easeInOutCubic(progress);
 
-    document.getElementById('start-tour').addEventListener('click', startTour);
-    document.getElementById('prev-star').addEventListener('click', prevStar);
-    document.getElementById('next-star').addEventListener('click', nextStar);
-    document.getElementById('end-tour').addEventListener('click', endTour);
-    
-    document.getElementById('star-details').addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-    
-    window.addEventListener('click', handleMouseClick);
-    window.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd, { passive: false });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    
-    document.addEventListener('click', function(event) {
-        const starDetails = document.getElementById('star-details');
-        if (starDetails.style.display === 'block' && 
-            !starDetails.contains(event.target)) {
-            hideStarDetails();
-        }
-    });
-    
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        isMobile = window.innerWidth <= 768;
-    });
-    
-    animate();
-}
+          camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+          controls.target.lerp(star.position, easeProgress);
+          camera.lookAt(star.position); 
 
-init();
+          if (progress < 1) {
+              requestAnimationFrame(animateCamera);
+          } else if (callback) {
+              callback();
+          }
+      }
 
-window.hideStarDetails = hideStarDetails;
-</script>
-</body>    
-</html>    
+      animateCamera();
+  }
+
+  function animateCameraToPosition(targetPosition, targetLookAt) {
+      const startPosition = camera.position.clone();
+      const startLookAt = controls.target.clone();
+
+      const duration = 2000; 
+      const startTime = Date.now();
+
+      function animateCamera() {
+          const now = Date.now();
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easeProgress = easeInOutCubic(progress);
+
+          camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+          controls.target.lerpVectors(startLookAt, targetLookAt, easeProgress);
+          camera.lookAt(controls.target);
+
+          if (progress < 1) {
+              requestAnimationFrame(animateCamera);
+          }
+      }
+
+      animateCamera();
+  }
+
+  function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function animate() {
+      requestAnimationFrame(animate);
+
+      if (sceneRotationEnabled) {
+          scene.rotation.y += 0.0001;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+  }
+
+  function handleZoom(event) {
+      if (tourActive) {
+          let delta = 0;
+          
+          if (event.type === 'wheel') {
+              delta = -Math.sign(event.deltaY);
+          } else if (event.type === 'touchmove' && event.touches.length === 2) {
+              const touch1 = event.touches[0];
+              const touch2 = event.touches[1];
+              const dist = Math.hypot(
+                  touch1.pageX - touch2.pageX,
+                  touch1.pageY - touch2.pageY
+              );
+              
+              if (event.target._lastPinchDistance) {
+                  delta = dist > event.target._lastPinchDistance ? 1 : -1;
+              }
+              
+              event.target._lastPinchDistance = dist;
+          }
+          
+          const zoomSpeed = 0.1;
+          delta *= zoomSpeed;
+
+          const distance = camera.position.distanceTo(controls.target);
+
+          const newDistance = Math.max(
+              controls.minDistance,
+              Math.min(controls.maxDistance, distance * (1 - delta))
+          );
+
+          const direction = camera.position.clone().sub(controls.target).normalize();
+
+          camera.position.copy(controls.target).add(direction.multiplyScalar(newDistance));
+      }
+  }
+
+  window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  function init() {
+      camera.position.z = 1000;
+      createStarField();
+
+      document.getElementById('start-tour').addEventListener('click', startTour);
+      document.getElementById('prev-star').addEventListener('click', prevStar);
+      document.getElementById('next-star').addEventListener('click', nextStar);
+      document.getElementById('end-tour').addEventListener('click', endTour);
+      
+      document.getElementById('star-details').addEventListener('click', function(e) {
+          e.stopPropagation();
+      });
+      
+      window.addEventListener('click', handleInteraction);
+      window.addEventListener('touchstart', handleInteraction, { passive: false });
+      window.addEventListener('wheel', handleZoom);
+      window.addEventListener('touchmove', handleZoom, { passive: false });
+      
+      document.addEventListener('touchstart', function(e) {
+          if (e.touches.length > 1) {
+              e.preventDefault();
+          }
+      }, { passive: false });
+      
+      animate();
+  }
+
+  init();
+
+  window.hideStarDetails = hideStarDetails;
+    </script>
+</body>
+
+</html>
