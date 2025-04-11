@@ -9,6 +9,157 @@
 
 </head>
 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" href="image.png" type="image/png">
+    <title>Space for Love</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            touch-action: none;
+        }
+        
+        .star-details {
+            display: none;
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 85%;
+            box-shadow: 0 0 15px rgba(0, 0, 255, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #star-name {
+            margin-top: 0;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+        
+        .tour-notification {
+            display: none;
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            text-align: center;
+            max-width: 85%;
+            z-index: 1001;
+        }
+        
+        .tour-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1000;
+            width: 90%;
+            flex-wrap: wrap;
+        }
+        
+        .tour-button {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            min-width: 120px;
+            margin: 5px;
+        }
+        
+        .tour-button:active {
+            background-color: rgba(50, 50, 200, 0.7);
+        }
+        
+        .tour-indicator {
+            display: none;
+            position: fixed;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            text-align: center;
+            z-index: 1000;
+            width: 85%;
+        }
+        
+        .star-label {
+            color: white;
+            font-size: 0.8rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 3px 5px;
+            border-radius: 8px;
+            pointer-events: none;
+            transform: translateY(-20px);
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        @media (max-width: 600px) {
+            .tour-button {
+                font-size: 0.8rem;
+                padding: 8px 12px;
+                min-width: 100px;
+            }
+            
+            .tour-indicator {
+                bottom: 85px;
+                font-size: 0.8rem;
+            }
+            
+            .star-details {
+                padding: 10px;
+                max-width: 90%;
+            }
+            
+            #star-name {
+                font-size: 1.1em;
+            }
+            
+            #star-info {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+
 <body>
 <div id="star-details" class="star-details">
     <button class="close-button" onclick="hideStarDetails()">✕</button>
@@ -26,7 +177,7 @@
     <button id="start-tour" class="tour-button">Почати подорож</button>
     <button id="prev-star" class="tour-button" style="display: none;">Попередня</button>
     <button id="next-star" class="tour-button" style="display: none;">Наступна</button>
-    <button id="end-tour" class="tour-button" style="display: none;">Завершити подорожувати</button>
+    <button id="end-tour" class="tour-button" style="display: none;">Завершити</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -55,6 +206,7 @@ controls.minDistance = 100;
 controls.maxDistance = 2000;
 controls.maxPolarAngle = Math.PI;
 controls.enableZoom = true;
+controls.rotateSpeed = 0.5;
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -72,12 +224,14 @@ let touchStartX = 0;
 let touchStartY = 0;
 let lastTapTime = 0;
 let pinchStartDistance = 0;
+let isUserInteracting = false;
+let isMobile = window.innerWidth <= 768;
 
 function createStarField() {
     const starsGeometry = new THREE.BufferGeometry();
     const starsMaterial = new THREE.PointsMaterial({
         color: 0xFFFFFF,
-        size: 2,
+        size: isMobile ? 1.5 : 2,
         transparent: true,
         vertexColors: true
     });
@@ -85,7 +239,7 @@ function createStarField() {
     const positions = [];
     const colors = [];
 
-    for (let i = 0; i < 5000; i++) {
+    for (let i = 0; i < (isMobile ? 3000 : 5000); i++) {
         const x = (Math.random() - 0.5) * 8000;
         const y = (Math.random() - 0.5) * 8000;
         const z = (Math.random() - 0.5) * 8000;
@@ -107,7 +261,8 @@ function createStarField() {
 }
 
 function createNamedStar(starData) {
-    const starGeometry = new THREE.SphereGeometry(10, 16, 16);
+    const size = isMobile ? 8 : 10;
+    const starGeometry = new THREE.SphereGeometry(size, 16, 16);
     const starMaterial = new THREE.MeshBasicMaterial({
         color: 0xFFFFFF,
         transparent: true,
@@ -126,7 +281,7 @@ function createNamedStar(starData) {
     labelDiv.style.opacity = starData.brightness;
 
     const label = new THREE.CSS2DObject(labelDiv);
-    label.position.set(0, 20, 0);
+    label.position.set(0, size * 2, 0);
     star.add(label);
     starObjects.push(star);
     scene.add(star);
@@ -177,6 +332,13 @@ function stopTwinkleAnimation(star) {
 function handleMouseClick(event) {
     event.preventDefault();
     
+    const clickedElement = document.elementFromPoint(event.clientX, event.clientY);
+    if (clickedElement && 
+        (clickedElement.classList.contains('tour-button') || 
+         clickedElement.classList.contains('close-button'))) {
+        return;
+    }
+    
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -184,9 +346,21 @@ function handleMouseClick(event) {
 }
 
 function handleTouchStart(event) {
+    isUserInteracting = true;
+    
+    const touchedElement = document.elementFromPoint(
+        event.touches[0].clientX, 
+        event.touches[0].clientY
+    );
+    
+    if (touchedElement && 
+        (touchedElement.classList.contains('tour-button') || 
+         touchedElement.classList.contains('close-button') ||
+         touchedElement.closest('.star-details'))) {
+        return;
+    }
+    
     if (event.touches.length === 1) {
-        event.preventDefault();
-        
         touchStartX = event.touches[0].clientX;
         touchStartY = event.touches[0].clientY;
         
@@ -194,27 +368,39 @@ function handleTouchStart(event) {
         const timeSinceLastTap = now - lastTapTime;
         
         if (timeSinceLastTap < 300) {
-            return;
+            event.preventDefault();
+            performZoom(0.2);
         }
         
         lastTapTime = now;
     } else if (event.touches.length === 2) {
+        event.preventDefault();
         pinchStartDistance = getPinchDistance(event);
     }
 }
 
 function handleTouchEnd(event) {
+    if (!isUserInteracting) return;
+    isUserInteracting = false;
+    
     if (event.changedTouches.length === 1) {
-        event.preventDefault();
-        
         const touchEndX = event.changedTouches[0].clientX;
         const touchEndY = event.changedTouches[0].clientY;
+        
+        const touchedElement = document.elementFromPoint(touchEndX, touchEndY);
+        if (touchedElement && 
+            (touchedElement.classList.contains('tour-button') || 
+             touchedElement.classList.contains('close-button') ||
+             touchedElement.closest('.star-details'))) {
+            return;
+        }
         
         const distX = touchEndX - touchStartX;
         const distY = touchEndY - touchStartY;
         const distance = Math.sqrt(distX * distX + distY * distY);
         
         if (distance < 10) {
+            event.preventDefault();
             mouse.x = (touchEndX / window.innerWidth) * 2 - 1;
             mouse.y = -(touchEndY / window.innerHeight) * 2 + 1;
             
@@ -230,8 +416,8 @@ function handleTouchMove(event) {
         const currentPinchDistance = getPinchDistance(event);
         const pinchDelta = currentPinchDistance - pinchStartDistance;
         
-        if (Math.abs(pinchDelta) > 5) {
-            const zoomSpeed = 0.01;
+        if (Math.abs(pinchDelta) > 2) {
+            const zoomSpeed = 0.005;
             const zoomFactor = pinchDelta * zoomSpeed;
             
             performZoom(zoomFactor);
@@ -577,6 +763,7 @@ function init() {
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        isMobile = window.innerWidth <= 768;
     });
     
     animate();
@@ -586,5 +773,5 @@ init();
 
 window.hideStarDetails = hideStarDetails;
 </script>
-</body>
+</body>    
 </html>    
